@@ -11,7 +11,13 @@ from det_mir.models import ObjectModel
 logger = logging.getLogger(f"(Детский мир - работа с файлами){__name__}")
 
 
-def save_to_files(current_time: str, objects: list[ObjectModel]):
+def save_to_files(current_time: str, objects: list[ObjectModel]) -> None:
+    """Сохраняет данные в файлы, в имени которых указано время
+
+    Args:
+        current_time (str): время, которое будет указано в названии файлов
+        objects (list[ObjectModel]): список объектов, которые будут записаны в файлы
+    """    
     folder = Path(RESULT_DIR)
     if not folder.exists() or not folder.is_dir():
         os.mkdir(folder)

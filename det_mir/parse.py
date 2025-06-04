@@ -118,11 +118,3 @@ def get_data() -> None:
     logger.info(
         f"Парсинг закончился в {end_time.strftime(datetime_format)}. Заняло времени: {end_time - current_time}"
     )
-
-
-def main():
-    get_data()
-
-
-if __name__ == "__main__":
-    main()
