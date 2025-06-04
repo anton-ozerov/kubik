@@ -1,14 +1,13 @@
 import datetime as dt
-import json
 import logging
 import re
 import time
 
-import pandas as pd
 import requests as rq
 from bs4 import BeautifulSoup
 
 from det_mir.config import cookies, get_headers
+from det_mir.create_files import save_to_files
 from det_mir.models import ObjectModel, ResultModel
 
 logger = logging.getLogger(f"(Детский мир){__name__}")
@@ -48,11 +47,6 @@ def parse_page(page: int = 1, max_page: int = 1) -> ResultModel | None:
         return None
     logger.info(f"Успешно получили данные со страницы {page}")
 
-    # with open(f'result{page}.html', 'w') as file:
-    #     file.write(response.text)
-    # with open("result.html", "r") as file:
-    #     src = file.read()
-
     src = response.text
     soup = BeautifulSoup(src, "lxml")
 
@@ -91,17 +85,6 @@ def parse_page(page: int = 1, max_page: int = 1) -> ResultModel | None:
     return ResultModel(current_page=page, max_page=num_pages, objects=list_objects)
 
 
-def get_next_page(offset: int, limit: int = 36):
-    response = rq.get(
-        f"https://api.detmir.ru/v2/products/new?filter=autoFilter:true;categories[].alias:igry_i_igrushki;platform:web;promo:false;site:detmir;withregion:RU-SPE&expand=meta.filter.info,meta.filters.delivery_speed,webp&exclude=stores&limit={limit}&offset={offset}&sort=popularityscore:desc&platform=web",
-        cookies=cookies,
-        headers=get_headers(),
-    )
-
-    result = response.json
-    print(result)
-
-
 def get_data() -> None:
     """
     Проходится по всем страницам "Игрушки для детей" и записывает данные в 2 файла - json и xlsx
@@ -128,27 +111,8 @@ def get_data() -> None:
             )
             time.sleep(seconds_to_sleep)
         page_info = parse_page(page=current_page, max_page=max_page)
-    # objects = list(set(objects))
-
-    file_name = f"detmir_{current_time}"
-
-    with open(f"{file_name}.json", "w", encoding="utf-8") as f:
-        json.dump(
-            [obj.model_dump() for obj in objects], f, ensure_ascii=False, indent=2
-        )
-    logger.info(f"Создан файл {file_name}.json")
-    df = pd.DataFrame([obj.model_dump() for obj in objects])
-    df = df.rename(
-        columns={
-            "id": "Артикул",
-            "title": "Название",
-            "current_price": "Текущая цена",
-            "old_price": "Старая цена",
-            "sale_percent": "Размер скидки",
-        }
-    )
-    df.to_excel(f"{file_name}.xlsx", index=False)
-    logger.info(f"Создан файл {file_name}.xlsx")
+    
+    save_to_files(current_time=current_time, objects=objects)  # сохраняем данные во файлах нужных форматов
 
     end_time = dt.datetime.now()
     logger.info(
