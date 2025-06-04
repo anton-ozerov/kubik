@@ -1,8 +1,3 @@
-# Myself
-test.py
-main.log
-.env
-
 # Python-generated files
 __pycache__/
 *.py[oc]
@@ -13,3 +8,9 @@ wheels/
 
 # Virtual environments
 .venv
+
+# Myself
+test.py
+main.log
+.env
+results/
