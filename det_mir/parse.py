@@ -116,5 +116,5 @@ def get_data() -> None:
 
     end_time = dt.datetime.now()
     logger.info(
-        f"Парсинг закончился в {end_time.strftime(datetime_format)}. Заняло времени: {end_time - current_time}"
+        f"Парсинг закончился в {end_time.strftime(datetime_format)}. Заняло времени: {end_time - start_time}"
     )
