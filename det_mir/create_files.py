@@ -11,13 +11,16 @@ from det_mir.models import ObjectModel
 logger = logging.getLogger(f"(Детский мир - работа с файлами){__name__}")
 
 
-def save_to_files(current_time: str, objects: list[ObjectModel]) -> None:
+def save_to_files(current_time: str, objects: list[ObjectModel]) -> Path:
     """Сохраняет данные в файлы, в имени которых указано время
 
     Args:
         current_time (str): время, которое будет указано в названии файлов
         objects (list[ObjectModel]): список объектов, которые будут записаны в файлы
-    """    
+
+    Returns:
+        pathlib.Path: путь к json файлу
+    """
     folder = Path(RESULT_DIR)
     if not folder.exists() or not folder.is_dir():
         os.mkdir(folder)
@@ -36,8 +39,9 @@ def save_to_files(current_time: str, objects: list[ObjectModel]) -> None:
     df = pd.DataFrame([obj.model_dump() for obj in objects])
     df = df.rename(
         columns={
-            "id": "Артикул",
+            "id": "ID в ДетМире",
             "title": "Название",
+            "uniq_number": "Артикул",
             "current_price": "Текущая цена",
             "old_price": "Старая цена",
             "sale_percent": "Размер скидки",
@@ -45,3 +49,5 @@ def save_to_files(current_time: str, objects: list[ObjectModel]) -> None:
     )
     df.to_excel(path_xlsx_file, index=False)
     logger.info(f"Создан файл {file_name}.xlsx")
+    
+    return path_json_file

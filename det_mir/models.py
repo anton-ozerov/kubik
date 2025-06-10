@@ -4,6 +4,7 @@ from pydantic import BaseModel
 class ObjectModel(BaseModel):
     id: int
     title: str
+    uniq_number: str  # Артикул товара
     current_price: int
     old_price: int | None = None
     sale_percent: int | None = None

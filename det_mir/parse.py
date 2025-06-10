@@ -1,5 +1,6 @@
 import datetime as dt
 import logging
+from pathlib import Path
 import re
 import time
 
@@ -19,6 +20,35 @@ def clean_price(text: str) -> int:
     """
     digits_only = re.sub(r"[^\d]", "", text)
     return int(digits_only)
+
+
+def parse_item_info(item_id: int) -> str:
+    """Получает информацию о товаре и возвращает его артикул
+
+    Args:
+        item_id (int): id товара на сайте Детский мир (из url)
+
+    Returns:
+        str: Артикул товара
+    """
+    response = None
+    while response is None:
+        try:
+            response = rq.get(
+                f"https://www.detmir.ru/product/index/id/{item_id}/",
+                headers=get_headers(),
+                cookies=cookies,
+            )
+        except Exception:
+            logger.exception(f"Ошибка в получении данных товара с id={item_id}. Пробуем ещё раз")
+            response = None
+    logger.info(f"Успешно получили данные товара с id={item_id}")
+    
+    src = response.text
+    soup = BeautifulSoup(src, "lxml")
+    uniq_number = soup.find_all("td", class_="Y_0")[1].text.strip()
+    logger.info(f"Артикул: {uniq_number}")
+    return uniq_number
 
 
 def parse_page(page: int = 1, max_page: int = 1) -> ResultModel | None:
@@ -71,11 +101,18 @@ def parse_page(page: int = 1, max_page: int = 1) -> ResultModel | None:
             else:
                 current_price = clean_price(card.find("span", class_="Vq").text)
                 old_price, sale_percent = None, None
+            
+            uniq_number = parse_item_info(item_id=id)
+            if uniq_number is None:
+                raise ValueError
+
         except ValueError:
             logger.exception("Ошибка в валидации данных")
+
         obj = ObjectModel(
             id=id,
             title=title,
+            uniq_number=uniq_number,
             current_price=current_price,
             old_price=old_price,
             sale_percent=sale_percent,
@@ -85,9 +122,12 @@ def parse_page(page: int = 1, max_page: int = 1) -> ResultModel | None:
     return ResultModel(current_page=page, max_page=num_pages, objects=list_objects)
 
 
-def get_data() -> None:
+def get_data() -> Path:
     """
     Проходится по всем страницам "Игрушки для детей" и записывает данные в 2 файла - json и xlsx
+    
+    Returns:
+        pathlib.Path: путь к json файлу
     """
     start_time = dt.datetime.now()
     datetime_format = "%d-%m-%Y_%H-%M-%S"
@@ -112,9 +152,10 @@ def get_data() -> None:
             time.sleep(seconds_to_sleep)
         page_info = parse_page(page=current_page, max_page=max_page)
     
-    save_to_files(current_time=current_time, objects=objects)  # сохраняем данные во файлах нужных форматов
+    json_file_path = save_to_files(current_time=current_time, objects=objects)  # сохраняем данные во файлах нужных форматов
 
     end_time = dt.datetime.now()
     logger.info(
         f"Парсинг закончился в {end_time.strftime(datetime_format)}. Заняло времени: {end_time - start_time}"
     )
+    return json_file_path
